@@ -23,6 +23,8 @@ net_bgms0 <- bgm(dat[, c(ids)] |> round(1),
 
 summary(net_bgms0)
 
+summary(net_bgms0)$main
+
 plot_network(net_bgms0, dashed = T,  groups = c("core", "peri", "peri", 
                                                "core", "core", "peri",
                                                "core", "core", "peri", 
@@ -46,17 +48,10 @@ net_bgms <- bgm(dat[, c(ids, pol_dims)] |> round(1),
                 iter = 5000, warmup = 2500, seed = 111)
                 
 
-plot_network(net_bgms, dashed = T,  groups = c("core", "peri", "peri", 
-                                               "core", "core", "peri",
-                                               "core", "core", "peri", 
-                                               "peri", "peri", "core",
-                                               "peri", "peri", "core", 
-                                               "peri", "peri", "core"))
-
 # compute energies
 energies <- energy_from_bgms(
-  bgms_fit          = net_bgms,
-  data              = dat[, c(ids,pol_dims)],
+  bgms_fit          = net_bgms0,
+  data              = dat[, c(ids)],
   reference_category = 0,
   na_as_zero        = TRUE
 )
@@ -73,3 +68,12 @@ lmfit <- lm(energies ~ RWA + I(RWA^2) +
 summary(lmfit)
 
 sjPlot::plot_model(lmfit, "pred", show.data = T, title = "Predicted dissonance scores (energy)")
+
+plot_network(net_bgms, dashed = T,  groups = c("core", "peri", "peri", 
+                                               "core", "core", "peri",
+                                               "core", "core", "peri", 
+                                               "peri", "peri", "core",
+                                               "peri", "peri", "core", 
+                                               "peri", "peri", "core"))
+
+
