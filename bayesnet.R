@@ -19,7 +19,7 @@ net_bgms0 <- bgm(dat[, c(ids)] |> round(1),
                 variable_type = c(
                 rep("blume-capel", length(ids))),
                 baseline_category = c(rep(0,18)), 
-                iter = 50000, warmup = 2500, seed = 111)
+                iter = 50000, warmup = 2500, seed = 111, na_action = "impute")
 
 summary(net_bgms0)
 
@@ -49,21 +49,34 @@ net_bgms <- bgm(dat[, c(ids, pol_dims)] |> round(1),
                 
 
 # compute energies
-energies <- energy_from_bgms(
-  bgms_fit          = net_bgms0,
-  data              = dat[, c(ids)],
-  reference_category = 0,
-  na_as_zero        = TRUE
+E <- energy_from_bgms(
+  bgms_fit = net_bgms0,
+  data =
+    dat |> 
+    select(any_of(ids)) |> 
+    mutate(across(
+      everything(),
+      ~ case_when(
+        .x == -1 ~ 0,   
+        .x == 0 ~ 1,   
+        .x == 1 ~ 2,    
+        TRUE ~ NA_real_
+      )
+    )),
+  reference_category = 1,
+  na_as_zero = F
 )
 
-summary(energies)
-hist(energies)
 
-dat_bind <- cbind(dat, energies)
+summary(E)
+hist(E)
 
-lmfit <- lm(energies ~ RWA + I(RWA^2) + 
+dat_bind <- cbind(dat, E)
+
+lmfit <- lm(E ~ RWA + I(RWA^2) + 
               SDO + I(SDO^2) +
-              POP + I(POP^2), dat_bind)
+              POP + I(POP^2), dat_bind |> mutate(across(
+                ids), round(1)))
 
 summary(lmfit)
 
