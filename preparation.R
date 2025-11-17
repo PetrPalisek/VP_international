@@ -12,6 +12,7 @@ library(tidyverse)
 library(semTools)
 library(responsePatterns)
 library(dplyr)
+library(lavaan.mi)
 
 
 # Load data
