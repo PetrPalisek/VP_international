@@ -19,7 +19,8 @@ net_bgms0 <- bgm(dat[, c(ids)] |> round(1),
                 variable_type = c(
                 rep("blume-capel", length(ids))),
                 baseline_category = c(rep(0,18)), 
-                iter = 50000, warmup = 2500, seed = 111, na_action = "impute")
+                iter = 50000, warmup = 2500, seed = 111, 
+                cores = 8)
 
 summary(net_bgms0)
 
@@ -45,12 +46,17 @@ net_bgms <- bgm(dat[, c(ids, pol_dims)] |> round(1),
                 variable_type = c(
                   rep("blume-capel", length(ids)),
                   rep("ordinal", 3)), baseline_category = c(rep(0,18), rep(0,3)),
-                iter = 5000, warmup = 2500, seed = 111)
+                iter = 50000, warmup = 2500, seed = 111, cores = 8, update_method = "adaptive-metropolis")
+
+summary(net_bgms)
+summary(net_bgms)$pairwise %>% rownames_to_column() %>% filter(grepl("RWA", 
+                                                               rowname)) %>% filter(abs(mean) > .01)
+
                 
 
 # compute energies
 E <- energy_from_bgms(
-  bgms_fit = net_bgms0,
+  bgms_fit = net_bgms,
   data =
     dat |> 
     select(any_of(ids)) |> 
