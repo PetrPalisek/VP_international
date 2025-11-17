@@ -114,3 +114,70 @@ bc_alpha_beta_plot <- function(alpha_beta,
     ggplot2::xlim(-5, 5) +
     ggplot2::theme_minimal()
 }
+
+
+# Compute per-participant Blume–Capel-style energy from a bgms fit
+#
+# E_n = - sum_{i<j} J_ij s_ni s_nj + sum_i D_i s_ni^2 - sum_i h_i s_ni
+#
+energy_from_bgms <- function(bgms_fit,
+                             data,
+                             reference_category = 0,
+                             na_as_zero = TRUE) {
+  J    <- bgms_fit$posterior_mean_pairwise
+  main <- bgms_fit$posterior_mean_main
+  
+  if (is.null(J) || is.null(main)) {
+    stop("Need posterior_mean_pairwise and posterior_mean_main in bgms_fit.")
+  }
+  
+  X_raw <- as.matrix(data)
+  p <- ncol(X_raw)
+  
+  if (!all(dim(J) == c(p, p))) {
+    stop("posterior_mean_pairwise must be p x p, here p = ", p, ".")
+  }
+  if (!all(dim(main) == c(p, 2))) {
+    stop("posterior_mean_main must be p x 2 (alpha, beta) for p variables.")
+  }
+  
+  # symmetrize J and zero diagonal
+  J <- (J + t(J)) / 2
+  diag(J) <- 0
+  
+  # main: col1 = alpha (h), col2 = beta (D)
+  h <- main[, 1]
+  D <- main[, 2]
+  
+  # recode data to spins {-1,0,+1}
+  S <- X_raw
+  S[,] <- NA_real_
+  S[X_raw <  reference_category] <- -1
+  S[X_raw == reference_category] <-  0
+  S[X_raw >  reference_category] <-  1
+  if (na_as_zero) S[is.na(S)] <- 0
+  
+  S_mat <- as.matrix(S)
+  
+  # pairwise term
+  SJ <- S_mat %*% J
+  pair_term <- -0.5 * rowSums(SJ * S_mat)
+  
+  # neutrality term
+  s_sq <- S_mat^2
+  neut_term  <- rowSums(sweep(s_sq, 2, D, `*`))
+  
+  # field term
+  field_term <- -rowSums(sweep(S_mat, 2, h, `*`))
+  
+  E <- pair_term + neut_term + field_term
+  
+  if (!na_as_zero) {
+    row_has_na <- apply(is.na(X_raw), 1, any)
+    E[row_has_na] <- NA_real_
+  }
+  if (!is.null(rownames(X_raw))) names(E) <- rownames(X_raw)
+  
+  E
+}
+
